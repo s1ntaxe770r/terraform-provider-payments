@@ -2,7 +2,10 @@ module github.com/s1ntaxe770r/terraform-provider-payments
 
 go 1.19
 
-require github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
+require (
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+)
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
