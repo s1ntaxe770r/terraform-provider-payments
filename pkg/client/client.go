@@ -18,6 +18,44 @@ type ApiClient struct {
 	httpClient *http.Client
 }
 
+type APIRequest struct {
+	ServiceType string                 `json:"service type"`
+	RequestRef  string                 `json:"requestref"`
+	Data        map[string]interface{} `json:"data", omitempty`
+}
+
+// BankList response struct
+//
+//	{
+//		"status": true,
+//		"message": "Completed Successfully",
+//		"data": {
+//			"banks": [
+//				{
+//					"bankCode":"",
+//					"bankName":""
+//				},
+//			]
+//		}
+//	}
+type BankListResponse struct {
+	Status  bool   `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		Banks []struct {
+			BankCode string `json:"bankCode"`
+			BankName string `json:"bankName"`
+		} `json:"banks"`
+	} `json:"data"`
+}
+
+// enum to represnt service types
+type ServiceType string
+
+const (
+	BankList ServiceType = "BankList"
+)
+
 func NewClient(apiToken string, email string) *ApiClient {
 	client := &http.Client{}
 	return &ApiClient{
@@ -51,7 +89,7 @@ func (c *ApiClient) GetAuthToken() {
 	// 			"apiKey": "abcd1234keyexample" //this is the key copied from the dashboard
 	// 		}'
 	// -X POST https://kuda-openapi.kuda.com/v2.1/Account/GetToken
-	c.l.Debug("Getting auth token")
+	c.l.Info("Getting auth token")
 	url := fmt.Sprintf("%s/Account/GetToken", c.BaseUrl)
 	data := map[string]string{
 		"email":  c.Email,
@@ -66,4 +104,35 @@ func (c *ApiClient) GetAuthToken() {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	c.AuthToken = buf.String()
+}
+
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImN0eSI6IkpXVCJ9.eyJmdWxsbmFtZSI6Ik9MVVdBU0VHVU4gSlVCUklMIE9ZRVRVTkpJIiwiZW1haWwiOiJoZWxsb0BqdWJyaWwueHl6IiwiY2xpZW50LWtleSI6ImFmMFAxNGRVZU15OEpnRGw1elR0IiwiZXhwIjoxNjg2NTE1NTA0LCJpc3MiOiJDb3JlSWRlbnRpdHkiLCJhdWQiOiJDb3JlSWRlbnRpdHkifQ.vFJIIiYYkjVjn69Kl3hS3YemN05UdoB5zwhujeppemY
+
+func (c *ApiClient) GetBankList() (*BankListResponse, error) {
+	data := APIRequest{
+		ServiceType: string(BankList),
+		RequestRef:  "",
+	}
+	c.l.Debug("Getting bank list")
+	c.GetAuthToken()
+	c.l.Info("Auth token: %s", c.AuthToken)
+
+	resp, err := c.PostRequest(c.BaseUrl, data)
+	if err != nil {
+		c.l.Error(err.Error())
+	}
+	defer resp.Body.Close()
+	// read response as bytes and convert to string
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	// print response as string
+	fmt.Println(buf.String())
+
+	var bankListResponse BankListResponse
+	err = json.Unmarshal(buf.Bytes(), &bankListResponse)
+	if err != nil {
+		c.l.Error(err.Error())
+	}
+	return &bankListResponse, nil
+
 }
