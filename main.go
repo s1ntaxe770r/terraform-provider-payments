@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/s1ntaxe770r/terraform-provider-payments/pkg/client"
-	"golang.org/x/exp/slog"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -21,16 +22,16 @@ func main() {
 	// }
 
 	// plugin.Serve(opts)
+	apikey := os.Getenv("API_KEY")
+	c := client.NewClient(apikey, "hello@jubril.xyz")
+	token := c.GetAuthToken()
 
-	c := client.NewClient("", "hello@jubril.xyz")
-
-	resp, err := c.GetBankList()
+	resp, err := c.GetBankList(token)
 
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	slog.Info(resp.Data.Banks[0].BankName)
-	slog.Info(resp.Data.Banks[0].BankCode)
+	logrus.Info(resp)
 
 }
