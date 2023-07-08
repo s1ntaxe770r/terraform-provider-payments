@@ -8,3 +8,5 @@ examples/.terraform.lock.hcl
 exmaples/terraform.tfstate.backup
 .DS_Store
 .idea/
+ref.txt
+banks.json
