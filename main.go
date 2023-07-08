@@ -30,6 +30,6 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	logrus.Info(name)
+	logrus.Info(name.Data.SessionID)
 
 }
