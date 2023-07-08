@@ -117,7 +117,6 @@ func (c *ApiClient) GetAuthToken() string {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	respStr := buf.String()
-	c.l.Debug(respStr)
 	return respStr
 }
 
@@ -146,7 +145,7 @@ func (c *ApiClient) GetBankList(authToken string) (*BankListResponse, error) {
 
 }
 
-func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBankCode string, authToken string) (string, error) {
+func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBankCode string, authToken string) (NameEnquiryResponse, error) {
 	data := APIRequest{
 		ServiceType: string(NameEnquiry),
 		RequestRef:  "",
@@ -160,7 +159,7 @@ func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBa
 
 	resp, err := c.PostRequest(c.BaseUrl, data, authToken)
 	if err != nil {
-		return "", err
+		return NameEnquiryResponse{}, err
 	}
 	defer resp.Body.Close()
 
@@ -172,11 +171,11 @@ func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBa
 
 	err = json.Unmarshal(buf.Bytes(), &enquireResp)
 	if err != nil {
-		return "", err
+		return NameEnquiryResponse{}, err
 	}
 
 	if !enquireResp.Status {
-		return "", errors.New(enquireResp.Message)
+		return NameEnquiryResponse{}, errors.New(enquireResp.Message)
 	}
-	return enquireResp.Data.BeneficiaryName, nil
+	return enquireResp, nil
 }
