@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"net/http"
 
-	"golang.org/x/exp/slog"
+	"github.com/sirupsen/logrus"
 )
 
 type ApiClient struct {
 	ApiToken   string
 	Email      string
-	l          slog.Logger
+	l          logrus.Logger
 	BaseUrl    string
 	AuthToken  string
 	httpClient *http.Client
 }
 
 type APIRequest struct {
-	ServiceType string                 `json:"service type"`
+	ServiceType string                 `json:"servicetype"`
 	RequestRef  string                 `json:"requestref"`
 	Data        map[string]interface{} `json:"data", omitempty`
 }
@@ -38,14 +38,18 @@ type APIRequest struct {
 //			]
 //		}
 //	}
+type Bank struct {
+	BankCode string `json:"bankCode"`
+	BankName string `json:"bankName"`
+}
+
+type Banks []Bank
+
 type BankListResponse struct {
-	Status  bool   `json:"status"`
 	Message string `json:"message"`
+	Status  bool   `json:"status"`
 	Data    struct {
-		Banks []struct {
-			BankCode string `json:"bankCode"`
-			BankName string `json:"bankName"`
-		} `json:"banks"`
+		Banks Banks `json:"banks"`
 	} `json:"data"`
 }
 
@@ -53,21 +57,24 @@ type BankListResponse struct {
 type ServiceType string
 
 const (
-	BankList ServiceType = "BankList"
+	BankList    ServiceType = "BANK_LIST"
+	NameEnquiry ServiceType = "NAME_ENQUIRY"
 )
 
 func NewClient(apiToken string, email string) *ApiClient {
 	client := &http.Client{}
+	l := logrus.New()
+	l.SetLevel(logrus.DebugLevel)
 	return &ApiClient{
 		ApiToken:   apiToken,
 		Email:      email,
 		BaseUrl:    "https://kuda-openapi.kuda.com/v2.1",
 		httpClient: client,
+		l:          *l,
 	}
 }
 
-func (c *ApiClient) PostRequest(url string, data interface{}) (*http.Response, error) {
-	c.l.Debug("Making post request to: %s", url)
+func (c *ApiClient) PostRequest(url string, data interface{}, authToken string) (*http.Response, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -77,11 +84,11 @@ func (c *ApiClient) PostRequest(url string, data interface{}) (*http.Response, e
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AuthToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
 	return c.httpClient.Do(req)
 }
 
-func (c *ApiClient) GetAuthToken() {
+func (c *ApiClient) GetAuthToken() string {
 	// 	curl \
 	// -H 'Content-Type: application/JSON' \
 	// -d '{
@@ -95,7 +102,8 @@ func (c *ApiClient) GetAuthToken() {
 		"email":  c.Email,
 		"apiKey": c.ApiToken,
 	}
-	resp, err := c.PostRequest(url, data)
+	// make a request using net/http
+	resp, err := c.PostRequest(url, data, "")
 	if err != nil {
 		c.l.Error(err.Error())
 	}
@@ -103,21 +111,21 @@ func (c *ApiClient) GetAuthToken() {
 	// read response as bytes and convert to string
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
-	c.AuthToken = buf.String()
+	respStr := buf.String()
+	c.l.Debug(respStr)
+	return respStr
 }
 
 // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImN0eSI6IkpXVCJ9.eyJmdWxsbmFtZSI6Ik9MVVdBU0VHVU4gSlVCUklMIE9ZRVRVTkpJIiwiZW1haWwiOiJoZWxsb0BqdWJyaWwueHl6IiwiY2xpZW50LWtleSI6ImFmMFAxNGRVZU15OEpnRGw1elR0IiwiZXhwIjoxNjg2NTE1NTA0LCJpc3MiOiJDb3JlSWRlbnRpdHkiLCJhdWQiOiJDb3JlSWRlbnRpdHkifQ.vFJIIiYYkjVjn69Kl3hS3YemN05UdoB5zwhujeppemY
 
-func (c *ApiClient) GetBankList() (*BankListResponse, error) {
+func (c *ApiClient) GetBankList(authToken string) (*BankListResponse, error) {
 	data := APIRequest{
 		ServiceType: string(BankList),
-		RequestRef:  "",
+		RequestRef:  "0",
 	}
 	c.l.Debug("Getting bank list")
-	c.GetAuthToken()
-	c.l.Info("Auth token: %s", c.AuthToken)
 
-	resp, err := c.PostRequest(c.BaseUrl, data)
+	resp, err := c.PostRequest(c.BaseUrl, data, authToken)
 	if err != nil {
 		c.l.Error(err.Error())
 	}
@@ -126,7 +134,7 @@ func (c *ApiClient) GetBankList() (*BankListResponse, error) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	// print response as string
-	fmt.Println(buf.String())
+	c.l.Info("list response: ", buf.String())
 
 	var bankListResponse BankListResponse
 	err = json.Unmarshal(buf.Bytes(), &bankListResponse)
