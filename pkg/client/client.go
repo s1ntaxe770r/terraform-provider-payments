@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/sirupsen/logrus"
+	"github.com/teris-io/shortid"
 )
 
 type ApiClient struct {
@@ -17,6 +18,7 @@ type ApiClient struct {
 	BaseUrl    string
 	AuthToken  string
 	httpClient *http.Client
+	AccountNo  string
 }
 
 type APIRequest struct {
@@ -59,15 +61,24 @@ type NameEnquiryData struct {
 	SessionID                string      `json:"sessionID"`
 }
 
+type SingleFundTransferResponse struct {
+	Message          string      `json:"message"`
+	Status           bool        `json:"status"`
+	RequestReference string      `json:"requestReference"`
+	ResponseCode     string      `json:"responseCode"`
+	Data             interface{} `json:"data" omitempty`
+}
+
 // enum to represnt service types
 type ServiceType string
 
 const (
 	BankList    ServiceType = "BANK_LIST"
 	NameEnquiry ServiceType = "NAME_ENQUIRY"
+	Transfer    ServiceType = "SINGLE_FUND_TRANSFER"
 )
 
-func NewClient(apiToken string, email string) *ApiClient {
+func NewClient(apiToken string, email string, accountNo string) *ApiClient {
 	client := &http.Client{}
 	l := logrus.New()
 	l.SetLevel(logrus.DebugLevel)
@@ -76,6 +87,7 @@ func NewClient(apiToken string, email string) *ApiClient {
 		Email:      email,
 		BaseUrl:    "https://kuda-openapi.kuda.com/v2.1",
 		httpClient: client,
+		AccountNo:  accountNo,
 		l:          *l,
 	}
 }
@@ -178,4 +190,53 @@ func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBa
 		return NameEnquiryResponse{}, errors.New(enquireResp.Message)
 	}
 	return enquireResp, nil
+}
+
+func (c *ApiClient) SingleFundTransfer(beneficiaryAccountNumber string, amount string, bankCode string, authToken string) (SingleFundTransferResponse, error) {
+	id, _ := shortid.Generate()
+	beneficiaryInfo, err := c.GetSenderName(beneficiaryAccountNumber, bankCode, authToken)
+	if err != nil {
+		return SingleFundTransferResponse{}, errors.New("Error beneficiar info")
+	}
+
+	data := APIRequest{
+		ServiceType: string(Transfer),
+		RequestRef:  id,
+	}
+	data.Data = make(map[string]interface{})
+
+	data.Data["beneficiaryAccount"] = beneficiaryAccountNumber
+	data.Data["beneficiaryBankCode"] = bankCode
+	data.Data["beneficiaryName"] = beneficiaryInfo.Data.BeneficiaryName
+	data.Data["amount"] = amount
+	data.Data["narration"] = "Sent from Terraform"
+	data.Data["nameEnquiryySessionID"] = beneficiaryInfo.Data.SessionID
+	data.Data["senderName"] = "Terraform"
+	data.Data["clientFeeCharge"] = 0
+	data.Data["ClientAccountNumber"] = c.AccountNo
+
+	resp, err := c.PostRequest(c.BaseUrl, data, authToken)
+	if err != nil {
+		return SingleFundTransferResponse{}, errors.New("Error making transfer: " + err.Error())
+	}
+
+	defer resp.Body.Close()
+
+	var transferResp SingleFundTransferResponse
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+
+	err = json.Unmarshal(buf.Bytes(), &transferResp)
+
+	if err != nil {
+		return SingleFundTransferResponse{}, errors.New("Error making transfer: " + err.Error())
+	}
+
+	if !transferResp.Status {
+		return SingleFundTransferResponse{}, errors.New("Error making transfer: " + transferResp.Message)
+	}
+
+	return transferResp, nil
+
 }
