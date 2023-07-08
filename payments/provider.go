@@ -13,6 +13,10 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Description: "email associated with your kuda buisness 	account",
 			},
+			"account_number": {
+				Type:        schema.TypeString,
+				Description: "account number associated with your kuda buisness account",
+			},
 		},
 	}
 }
