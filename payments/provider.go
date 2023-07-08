@@ -11,7 +11,7 @@ func Provider() *schema.Provider {
 			},
 			"email": {
 				Type:        schema.TypeString,
-				Description: "email associated with your kuda account",
+				Description: "email associated with your kuda buisness account",
 			},
 		},
 	}
