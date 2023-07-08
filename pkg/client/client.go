@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -24,20 +25,6 @@ type APIRequest struct {
 	Data        map[string]interface{} `json:"data", omitempty`
 }
 
-// BankList response struct
-//
-//	{
-//		"status": true,
-//		"message": "Completed Successfully",
-//		"data": {
-//			"banks": [
-//				{
-//					"bankCode":"",
-//					"bankName":""
-//				},
-//			]
-//		}
-//	}
 type Bank struct {
 	BankCode string `json:"bankCode"`
 	BankName string `json:"bankName"`
@@ -51,6 +38,25 @@ type BankListResponse struct {
 	Data    struct {
 		Banks Banks `json:"banks"`
 	} `json:"data"`
+}
+
+type NameEnquiryResponse struct {
+	Message string          `json:"message"`
+	Status  bool            `json:"status"`
+	Data    NameEnquiryData `json:"data"`
+}
+
+type NameEnquiryData struct {
+	BeneficiaryAccountNumber string      `json:"beneficiaryAccountNumber"`
+	BeneficiaryName          string      `json:"beneficiaryName"`
+	SenderAccountNumber      string      `json:"senderAccountNumber"`
+	SenderName               interface{} `json:"senderName"`
+	BeneficiaryCustomerID    int         `json:"beneficiaryCustomerID"`
+	BeneficiaryBankCode      string      `json:"beneficiaryBankCode"`
+	NameEnquiryID            int         `json:"nameEnquiryID"`
+	ResponseCode             string      `json:"responseCode"`
+	TransferCharge           int         `json:"transferCharge"`
+	SessionID                string      `json:"sessionID"`
 }
 
 // enum to represnt service types
@@ -116,8 +122,6 @@ func (c *ApiClient) GetAuthToken() string {
 	return respStr
 }
 
-// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImN0eSI6IkpXVCJ9.eyJmdWxsbmFtZSI6Ik9MVVdBU0VHVU4gSlVCUklMIE9ZRVRVTkpJIiwiZW1haWwiOiJoZWxsb0BqdWJyaWwueHl6IiwiY2xpZW50LWtleSI6ImFmMFAxNGRVZU15OEpnRGw1elR0IiwiZXhwIjoxNjg2NTE1NTA0LCJpc3MiOiJDb3JlSWRlbnRpdHkiLCJhdWQiOiJDb3JlSWRlbnRpdHkifQ.vFJIIiYYkjVjn69Kl3hS3YemN05UdoB5zwhujeppemY
-
 func (c *ApiClient) GetBankList(authToken string) (*BankListResponse, error) {
 	data := APIRequest{
 		ServiceType: string(BankList),
@@ -143,4 +147,44 @@ func (c *ApiClient) GetBankList(authToken string) (*BankListResponse, error) {
 	}
 	return &bankListResponse, nil
 
+}
+
+func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBankCode string, authToken string) (string, error) {
+	data := APIRequest{
+		ServiceType: "NAME_ENQUIRY",
+		RequestRef:  "",
+	}
+	data.Data = make(map[string]interface{}) // Initialize the map
+
+	data.Data["beneficiaryAccountNumber"] = beneficiaryAccountNumber
+	data.Data["beneficiaryBankCode"] = beneficiaryBankCode
+	data.Data["SenderTrackingReference"] = " "
+	data.Data["isRequestFromVirtualAccount"] = "false"
+
+	stringData, _ := json.Marshal(data)
+	logrus.Info(string(stringData))
+
+	resp, err := c.PostRequest(c.BaseUrl, data, authToken)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// read response as bytes and convert to NameEnquiryResponse
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+
+	var enquireResp NameEnquiryResponse
+
+	err = json.Unmarshal(buf.Bytes(), &enquireResp)
+	if err != nil {
+		return "", err
+	}
+
+	if !enquireResp.Status {
+		return "", errors.New(enquireResp.Message)
+	}
+
+	c.l.Info("NameEnquiry response: ", enquireResp)
+	return enquireResp.Data.BeneficiaryName, nil
 }
