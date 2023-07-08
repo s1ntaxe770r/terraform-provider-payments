@@ -24,7 +24,6 @@ func main() {
 	apikey := os.Getenv("API_KEY")
 	c := client.NewClient(apikey, "hello@jubril.xyz")
 	token := c.GetAuthToken()
-	logrus.Info(token)
 
 	name, err := c.GetSenderName("2182383852", "000004", token)
 	if err != nil {
