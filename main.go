@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/s1ntaxe770r/terraform-provider-payments/pkg/client"
@@ -25,13 +24,13 @@ func main() {
 	apikey := os.Getenv("API_KEY")
 	c := client.NewClient(apikey, "hello@jubril.xyz")
 	token := c.GetAuthToken()
+	logrus.Info(token)
 
-	resp, err := c.GetBankList(token)
-
+	name, err := c.GetSenderName("2182383852", "000004", token)
 	if err != nil {
-		fmt.Println(err)
+		logrus.Fatal(err)
 	}
 
-	logrus.Info(resp)
+	logrus.Info(name)
 
 }
