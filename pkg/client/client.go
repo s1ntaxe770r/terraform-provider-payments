@@ -102,7 +102,6 @@ func (c *ApiClient) GetAuthToken() string {
 	// 			"apiKey": "abcd1234keyexample" //this is the key copied from the dashboard
 	// 		}'
 	// -X POST https://kuda-openapi.kuda.com/v2.1/Account/GetToken
-	c.l.Info("Getting auth token")
 	url := fmt.Sprintf("%s/Account/GetToken", c.BaseUrl)
 	data := map[string]string{
 		"email":  c.Email,
@@ -137,8 +136,6 @@ func (c *ApiClient) GetBankList(authToken string) (*BankListResponse, error) {
 	// read response as bytes and convert to string
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
-	// print response as string
-	c.l.Info("list response: ", buf.String())
 
 	var bankListResponse BankListResponse
 	err = json.Unmarshal(buf.Bytes(), &bankListResponse)
@@ -151,7 +148,7 @@ func (c *ApiClient) GetBankList(authToken string) (*BankListResponse, error) {
 
 func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBankCode string, authToken string) (string, error) {
 	data := APIRequest{
-		ServiceType: "NAME_ENQUIRY",
+		ServiceType: string(NameEnquiry),
 		RequestRef:  "",
 	}
 	data.Data = make(map[string]interface{}) // Initialize the map
@@ -160,9 +157,6 @@ func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBa
 	data.Data["beneficiaryBankCode"] = beneficiaryBankCode
 	data.Data["SenderTrackingReference"] = " "
 	data.Data["isRequestFromVirtualAccount"] = "false"
-
-	stringData, _ := json.Marshal(data)
-	logrus.Info(string(stringData))
 
 	resp, err := c.PostRequest(c.BaseUrl, data, authToken)
 	if err != nil {
@@ -184,7 +178,5 @@ func (c *ApiClient) GetSenderName(beneficiaryAccountNumber string, beneficiaryBa
 	if !enquireResp.Status {
 		return "", errors.New(enquireResp.Message)
 	}
-
-	c.l.Info("NameEnquiry response: ", enquireResp)
 	return enquireResp.Data.BeneficiaryName, nil
 }
