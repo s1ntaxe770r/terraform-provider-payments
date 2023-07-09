@@ -11,3 +11,5 @@ exmaples/terraform.tfstate.backup
 ref.txt
 banks.json
 examples/.terraform
+examples/terraform.tfvars 
+
