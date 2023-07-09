@@ -20,6 +20,15 @@ variable "account_number" {
     type = string
 }
 
+variable "bank_code" {
+    type = string
+}
+
+variable "recipient" {
+  type = string
+}
+
+
 
 
 provider "payments" {
@@ -31,9 +40,19 @@ provider "payments" {
 //create variables 
 
 
-data "payments_banks" "banks" {}
+# data "payments_banks" "banks" {}
 
-output "banks" {
-  value = data.payments_banks.banks
+# output "banks" {
+#   value = data.payments_banks.banks
+# }
+
+resource "payments_bank_transfer" "tf" {
+  amount      = "1000"
+  account_number  = var.recipient
+  bank_code   = var.bank_code
 }
 
+output "name" {
+  value = payments_bank_transfer.tf
+}
+  
