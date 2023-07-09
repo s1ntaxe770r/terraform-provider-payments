@@ -7,13 +7,7 @@ terraform {
   }
 }
 
-provider "payments" {
-  api_token      = var.api_token
-  email          = var.email
-  account_number = var.account_number
-}
 
-//create variables 
 variable "api_token" {
   type = string
 }
@@ -26,6 +20,15 @@ variable "account_number" {
     type = string
 }
 
+
+
+provider "payments" {
+  api_token      = var.api_token
+  email          = var.email
+  account_number = var.account_number
+}
+
+//create variables 
 
 
 data "payments_banks" "banks" {}
