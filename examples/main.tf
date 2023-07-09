@@ -13,10 +13,24 @@ provider "payments" {
   account_number = var.account_number
 }
 
+//create variables 
+variable "api_token" {
+  type = string
+}
+
+variable "email" {
+  type = string
+
+}
+variable "account_number" {
+    type = string
+}
+
+
+
 data "payments_banks" "banks" {}
 
 output "banks" {
   value = data.payments_banks.banks
 }
-
 
