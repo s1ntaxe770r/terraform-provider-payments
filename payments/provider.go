@@ -18,5 +18,8 @@ func Provider() *schema.Provider {
 				Description: "account number associated with your kuda buisness account",
 			},
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"payments_banks": dataSourceBanks(),
+		},
 	}
 }
