@@ -30,6 +30,9 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"payments_banks": dataSourceBanks(),
 		},
+		ResourcesMap: map[string]*schema.Resource{
+			"bank_transfer": resourceBankTransfer(),
+		},
 		ConfigureContextFunc: proivdeConfigure,
 	}
 }
