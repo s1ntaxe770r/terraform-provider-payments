@@ -10,3 +10,4 @@ exmaples/terraform.tfstate.backup
 .idea/
 ref.txt
 banks.json
+examples/.terraform
