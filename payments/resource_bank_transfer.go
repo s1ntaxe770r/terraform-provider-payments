@@ -10,18 +10,23 @@ import (
 func resourceBankTransfer() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceBankTransferCreate,
+		Read:   schema.Noop,
+		Delete: schema.Noop,
 		Schema: map[string]*schema.Schema{
 			"amount": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"bank_code": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"account_number": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"message": &schema.Schema{
 				Type:     schema.TypeString,
@@ -32,6 +37,10 @@ func resourceBankTransfer() *schema.Resource {
 				Computed: true,
 			},
 			"request_reference": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"response_code": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -49,19 +58,21 @@ func resourceBankTransferCreate(d *schema.ResourceData, m interface{}) error {
 	resp, err := c.SingleFundTransfer(accountNumber, amount, bankCode, authToken)
 
 	if err != nil {
-		return errors.New("unable to make transfer" + err.Error())
-
+		return err
 	}
 	if err := d.Set("message", resp.Message); err != nil {
-		return errors.New("unable to set message" + err.Error())
+		return errors.New("error setting message")
 	}
-
 	if err := d.Set("status", resp.Status); err != nil {
-		return errors.New("unable to set status" + err.Error())
+		return errors.New("error setting status")
+	}
+	if err := d.Set("request_reference", resp.RequestReference); err != nil {
+		return errors.New("error setting request_reference")
+	}
+	if err := d.Set("response_code", resp.ResponseCode); err != nil {
+		return errors.New("error setting response_code")
 	}
 
-	if err := d.Set("request_reference", resp.RequestReference); err != nil {
-		return errors.New("unable to set request reference" + err.Error())
-	}
+	d.SetId(resp.RequestReference)
 	return nil
 }
