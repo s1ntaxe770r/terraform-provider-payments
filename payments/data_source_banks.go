@@ -34,20 +34,29 @@ func dataSourceBanksRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*client.ApiClient)
 	authToken := client.GetAuthToken()
 	bankListResponse, err := client.GetBankList(authToken)
+
 	if err != nil {
 		return err
 	}
 
-	var banks []map[string]interface{}
-	for _, bank := range bankListResponse.Data.Banks {
-		bankData := make(map[string]interface{})
-		bankData["name"] = bank.BankName
-		bankData["code"] = bank.BankCode
-		banks = append(banks, bankData)
-	}
+	banks := flattenBanks(bankListResponse.Data.Banks)
 
 	d.SetId("banks") // Set a unique ID for the resource data
 	d.Set("banks", banks)
 
 	return nil
+}
+
+func flattenBanks(banks []client.Bank) (values []map[string]interface{}) {
+	if banks != nil {
+		for _, bank := range banks {
+			value := map[string]interface{}{
+				"name": bank.BankName,
+				"code": bank.BankCode,
+			}
+			values = append(values, value)
+		}
+
+	}
+	return values
 }
