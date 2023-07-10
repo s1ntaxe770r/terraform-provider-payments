@@ -47,12 +47,19 @@ provider "payments" {
 # }
 
 resource "payments_bank_transfer" "tf" {
-  amount      = "1000"
+  amount      = "2000"
   account_number  = var.recipient
   bank_code   = var.bank_code
 }
 
-output "name" {
-  value = payments_bank_transfer.tf
+output "status" {
+  value = payments_bank_transfer.tf.message
+}
+
+output "tr_ref" {
+  value = payments_bank_transfer.tf.request_reference
 }
   
+
+
+
