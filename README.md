@@ -24,6 +24,6 @@ Because i don't want to get arrested. I can't risk someone actually trying to us
 ![demo](./tf.jpeg)
 
 
-trying to avoid doxing myself so if you really want to see this work you could just ask me for a demo 
+trying to avoid doxing myself so if you really want to see this work you could just ask me for a demo.
 
 
