@@ -211,7 +211,7 @@ func (c *ApiClient) SingleFundTransfer(beneficiaryAccountNumber string, amount s
 	data.Data["amount"] = amount
 	data.Data["narration"] = "Sent from Terraform"
 	data.Data["nameEnquiryySessionID"] = beneficiaryInfo.Data.SessionID
-	data.Data["senderName"] = "Terraform"
+	data.Data["SenderName"] = "Terraform"
 	data.Data["clientFeeCharge"] = 0
 	data.Data["ClientAccountNumber"] = c.AccountNo
 
