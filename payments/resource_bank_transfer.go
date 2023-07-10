@@ -24,9 +24,10 @@ func resourceBankTransfer() *schema.Resource {
 				ForceNew: true,
 			},
 			"account_number": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Sensitive: true,
+				Required:  true,
+				ForceNew:  true,
 			},
 			"message": &schema.Schema{
 				Type:     schema.TypeString,
